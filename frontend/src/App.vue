@@ -1,11 +1,11 @@
 <template>
-  <form @submit.prevent class="flex flex-col" action="/api" method="post" enctype="multipart/form-data">
+  <form @submit.prevent class="flex flex-col" enctype="multipart/form-data">
     <section>
       <input @change="onChangeFile" type="file" />
       <input v-model="form.interval" type="range" step="1" min="0" max="5000" class="text-black" /> {{ form.interval }} ms
     </section>
     <section>
-      <button @click="onSubmit" type="submit" class="button ">Print</button>
+      <button @click="onSubmit" type="submit">Print</button>
     </section>
   </form>
 </template>
@@ -18,15 +18,22 @@ const form = reactive({
   file: null
 })
 
-
-function onChangeFile(event : Event) {
+function onChangeFile(event : Event) : void {
   const { files } = event.target
   if (files && files[0]) {
     form.file = files[0]
   }
 }
 
-function onSubmit() {
-  console.log(form)
+function onSubmit() : void {
+  if (form.file) {
+    const formData = new FormData()
+    for (const key in form) {
+      formData.set(key, form[key])
+    }
+    fetch(__API_PATH__, { method: 'POST', body: formData });
+  } else {
+    console.warn('NO FILE');
+  }
 }
 </script>
