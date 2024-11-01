@@ -24,12 +24,17 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 
+const socket = new WebSocket(__WSS_PATH__);
 const imageLines = ref([])
 const errors = ref([])
 const form = reactive({
   interval: 0,
   file: null
 })
+
+socket.addEventListener('message', (message : MessageEvent) => {
+  console.log(message.data)
+});
 
 function onChangeFile(event : Event) : void {
   const { files } = event.target
@@ -59,7 +64,7 @@ async function onSubmit() : Promise<void> {
 }
 
 async function handleResponseError(response : any) : Promise<void> {
-  const data : any = await response.json();
+  const data = await response.json();
   if (typeof data.message === 'string') {
     addError(data.message)
   }

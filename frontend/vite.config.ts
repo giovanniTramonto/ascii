@@ -6,11 +6,13 @@ export default defineConfig((env : any) => {
   const envars = loadEnv(env.mode, './');
   const serverURL = new URL(envars.VITE_SERVER_URL);
   const serverAPIPath = envars.VITE_SERVER_API_PATH;
+  const wssPath = envars.VITE_WSS_PATH;
   return {
     plugins: [vue()],
     envDir: './',
     define: {
       __API_PATH__: JSON.stringify(serverAPIPath),
+      __WSS_PATH__: JSON.stringify(wssPath)
     },
     server: {
       port: envars.VITE_PORT,

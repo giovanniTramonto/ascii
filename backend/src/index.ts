@@ -2,7 +2,8 @@ import cors from 'cors';
 import 'dotenv/config';
 import express from 'express';
 import fileUpload from 'express-fileupload';
-import { readFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises';
+import WebSocket from 'ws';
 
 interface printObject {
   interval: number,
@@ -11,6 +12,8 @@ interface printObject {
 }
 
 const port = process.env.PORT;
+const wssPort : number = Number(process.env.WSS_PORT);
+const wss = new WebSocket.Server({ port: wssPort });
 const app = express();
 const printData : printObject = {
   interval: 0,
@@ -53,4 +56,10 @@ app.route('/api')
 
 app.listen(port, () => {
   console.log(`Server is running: http://localhost:${port}`);
+});
+
+wss.on('connection', (ws: WebSocket) => {
+  console.log('Client connected');
+
+  ws.send('Hello from the Server!');
 });
