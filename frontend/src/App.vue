@@ -1,11 +1,11 @@
 <template>
-  <form @submit.prevent class="flex flex-col" enctype="multipart/form-data">
+  <form @submit.prevent class="form" enctype="multipart/form-data">
     <section>
       <input @change="onChangeFile" type="file" />
-      <input v-model="form.interval" type="range" step="1" min="0" max="5000" class="text-black" /> {{ form.interval }} ms
+      <input v-model="form.interval" type="range" step="1" min="0" max="5000" /> {{ form.interval }} ms
     </section>
     <section>
-      <button @click="onSubmit" type="submit">Print</button>
+      <button @click="onSubmit" type="submit" class="button">Print</button>
     </section>
     <section v-if="errors.length > 0">
       <p v-for="error in errors">
@@ -13,17 +13,23 @@
       </p>
     </section>
   </form>
+
+  <div v-if="imageLines.length > 0" class="background">
+    <div class="background-inner">
+      <span v-for="line in imageLines">{{ line }}</span>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 
+const imageLines = ref([])
 const errors = ref([])
 const form = reactive({
   interval: 0,
   file: null
 })
-
 
 function onChangeFile(event : Event) : void {
   const { files } = event.target
@@ -41,7 +47,10 @@ async function onSubmit() : Promise<void> {
       formData.set(key, form[key]);
     }
     const response = await fetch(__API_PATH__, { method: 'POST', body: formData });
-    if (!response.ok) {
+    if (response.ok) {
+      const data = await response.json()
+      imageLines.value = data.lines
+    } else {
       handleResponseError(response)
     }
   } else {
@@ -63,10 +72,38 @@ function addError(message : string) :void {
 function clearErrors() : void {
   errors.value.length = 0
 }
-
-// function readFileByClient(file : File) : void {
-//   const reader = new FileReader();
-//   reader.addEventListener('load', () => { console.log(reader.result) })
-//   reader.readAsText(file);
-// }
 </script>
+
+<style scoped>
+.background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.background-inner {
+  white-space: pre;
+  text-align: center;
+  font-family: monospace;
+}
+.background-inner span {
+  display: block;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+}
+.form section {
+  padding: 1rem;
+}
+
+.button {
+  background: white;
+  padding: 0.25rem 0.5rem;
+  color: black;
+}
+</style>

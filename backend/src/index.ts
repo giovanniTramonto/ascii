@@ -6,14 +6,16 @@ import { readFile } from 'node:fs/promises'
 
 interface printObject {
   interval: number,
-  content: string | null
+  content: string | null,
+  lines: string[]
 }
 
 const port = process.env.PORT;
 const app = express();
 const printData : printObject = {
   interval: 0,
-  content: null
+  content: null,
+  lines: []
 }
 
 app.use(cors());
@@ -27,22 +29,26 @@ app.route('/api')
     res.status(200).json({ message: 'Hello from the server!' });
   })
   .post(async (_req, res) : Promise<void> => {
-    const { body, files } = _req
+    const { body, files } = _req;
     if (body.interval) {
-      printData.interval = body.interval
+      printData.interval = body.interval;
     }
     if (files?.file) {
-      const uploadFile : any = files.file
+      const uploadFile : any = files.file;
       if (uploadFile.mimetype === 'text/plain') {
-        // console.log(uploadFile)
-        printData.content = await readFile(uploadFile.tempFilePath, 'utf8')
+        const content = await readFile(uploadFile.tempFilePath, 'utf8');
+        if (content) {
+          printData.content = content
+          printData.lines = content.split(/\r?\n/)
+          res.status(200).json(printData);
+        }
       } else {
         res.status(400).json({
           message: 'NOT A PLAIN TEXT FILE'
         });
       }
     }
-    res.status(200)
+    res.status(200);
   });
 
 app.listen(port, () => {
