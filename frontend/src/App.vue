@@ -24,12 +24,17 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 
+const ws = new WebSocket(__WSS_PATH__);
 const imageLines = ref([])
 const errors = ref([])
 const form = reactive({
   interval: 0,
   file: null
 })
+
+ws.addEventListener('open', () => {
+  ws.send("Hello Server!");
+});
 
 function onChangeFile(event : Event) : void {
   const { files } = event.target
