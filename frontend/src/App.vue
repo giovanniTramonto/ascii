@@ -1,24 +1,32 @@
 <template>
+<div class="wrapper">
   <form @submit.prevent class="form" enctype="multipart/form-data">
-    <section>
-      <input @change="onChangeFile" type="file" />
-      <input v-model="form.interval" type="range" step="1" min="0" max="5000" /> {{ form.interval }} ms
+    <section class="section section--1">
+      <label for="file" class="label">Select a plain text file</label>
+      <input @change="onChangeFile" type="file" name="file" />
     </section>
-    <section>
-      <button @click="onSubmit" type="submit" class="button" :disabled=isTextUploaded>Print</button>
+    <section class="section section--2">
+      <label for="interval" class="label">Choose interval</label>
+      <input v-model="form.interval" type="range" name="interval" step="1" min="0" max="5000" /><span>{{ form.interval }} ms</span>
     </section>
-    <section v-if="errors.length > 0">
-      <p v-for="error in errors">
-        <span>{{ error }}</span>
-      </p>
+    <section class="section section--3">
+      <button @click="onSubmit" type="submit" class="button">Print</button>
     </section>
   </form>
 
-  <div v-if="textLines.length > 0" class="background">
-    <div class="background-inner">
+  <div class="notifications">
+    <div v-if="errors.length > 0" class="errors">
+      <div v-for="error in errors">{{ error }}</div>
+    </div>
+    <div v-if="printingProgress" class="progress">Progress {{ printingProgress }}%</div>
+  </div>
+
+  <div v-if="textLines.length > 0" class="output">
+    <div class="output-inner">
       <span v-for="line in textLines">{{ line }}</span>
     </div>
   </div>
+</div>
 </template>
 
 <script setup lang="ts">
@@ -32,6 +40,7 @@ const form = reactive({
   interval: 0,
   file: null
 })
+const printingProgress = ref(null);
 
 socket.addEventListener('message', (message : MessageEvent) => {
   textLines.value.push(message.data)
@@ -77,34 +86,89 @@ function reset() : void {
 </script>
 
 <style scoped>
-.background {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.button {
+  border: 1px solid var(--clr-yellow);
+  padding: 0.5rem;
+  color: var(--clr-yellow);
+  background: none;
+  cursor: pointer;
 }
-.background-inner {
-  white-space: pre;
-  font-family: monospace;
+.button:hover,
+.button:active {
+  background: var(--clr-yellow);
+  color: var(--clr-black);
 }
-.background-inner span {
-  display: block;
+
+.errors {
+  background: var(--clr-yellow);
+  color: var(--clr-black);
+  padding: 1rem;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-}
-.form section {
-  padding: 1rem;
+  gap: 1rem;
+  padding: 1rem 0;
 }
 
-.button {
-  background: white;
-  padding: 0.25rem 0.5rem;
-  color: black;
+@media screen and (min-width: 960px) {
+  .form {
+    flex-direction: row;
+  }
+}
+
+.label {
+  display: inline-block;
+  color: var(--clr-yellow);
+  padding: 0.5rem 1rem;
+}
+
+.notifications {
+  min-height: 4rem;
+}
+
+.output {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+.output-inner {
+  white-space: pre;
+}
+.output-inner span {
+  display: block;
+}
+
+.progress {
+  padding: 0 1rem;
+}
+
+.section {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.section--1 {
+  justify-self: start;
+}
+.section--2 {
+  justify-self: center;
+}
+.section--3 {
+  flex: 1;
+  padding: 0 1rem;
+}
+
+@media screen and (min-width: 960px) {
+  .section--3 {
+    justify-content: flex-end;
+  }
+}
+
+.wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 </style>
