@@ -32,6 +32,11 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 
+interface printMessage {
+  progress: number,
+  line: string
+}
+
 const socket = new WebSocket(__WSS_PATH__, ['ascii']);
 const textLines = ref([])
 const isTextUploaded = ref(false)
@@ -43,7 +48,9 @@ const form = reactive({
 const printingProgress = ref(null);
 
 socket.addEventListener('message', (message : MessageEvent) => {
-  textLines.value.push(message.data)
+  const { progress, line } : printMessage = JSON.parse(message.data)
+  printingProgress.value = progress
+  textLines.value.push(line)
 });
 
 function onChangeFile(event : Event) : void {

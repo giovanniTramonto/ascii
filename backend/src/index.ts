@@ -5,10 +5,9 @@ import fileUpload from 'express-fileupload';
 import nReadlines from 'n-readlines'
 import WebSocket from 'ws';
 
-interface printObject {
-  interval: number,
-  content: string | null,
-  lines: string[]
+interface printMessage {
+  progress: number,
+  line: string
 }
 
 const port = process.env.PORT;
@@ -30,9 +29,14 @@ app.route('/api')
     if (body.interval && files?.file) {
       const uploadFile : any = files.file;
       if (uploadFile.mimetype === 'text/plain') {
-        const lines = new nReadlines(uploadFile.tempFilePath);
-        if (lines) {
-          // do not wait for the function
+        const nLines = new nReadlines(uploadFile.tempFilePath);
+        if (nLines) {
+          const lines : string[] = [];
+          let line;
+          while (line = nLines.next()) {
+            lines.push(line.toString('ascii'))
+          }
+          // do not wait for async function
           sendLinesToClient(lines, body.interval)
           res.status(200);
         } else {
@@ -54,10 +58,15 @@ wss.on('connection', (ws: WebSocket) => {
   console.log(`Client socket connected on port ${wssPort}`)
 });
 
-async function sendLinesToClient(lines: any, interval: number = 0) {
-  let line;
-  while (line = lines.next()) {
-    clientSocket.send(line.toString('ascii'));
-    await new Promise(resolve => setTimeout(resolve, interval))
+async function sendLinesToClient(lines: string[], interval: number = 0) {
+  let index = 0
+  for (const line of lines) {
+    index++;
+    const message : printMessage = {
+      progress: Math.round(100 / lines.length * index),
+      line
+    }
+    clientSocket.send(JSON.stringify(message));
+    await new Promise(resolve => setTimeout(resolve, interval));
   }
 }
