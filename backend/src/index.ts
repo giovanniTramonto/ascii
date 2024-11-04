@@ -2,7 +2,7 @@ import cors from 'cors';
 import 'dotenv/config';
 import express from 'express';
 import fileUpload from 'express-fileupload';
-import { readFile } from 'node:fs/promises';
+import nReadlines from 'n-readlines'
 import WebSocket from 'ws';
 
 interface printObject {
@@ -15,43 +15,33 @@ const port = process.env.PORT;
 const wssPort : number = Number(process.env.WSS_PORT);
 const wss = new WebSocket.Server({ port: wssPort });
 const app = express();
-const printData : printObject = {
-  interval: 0,
-  content: null,
-  lines: []
-}
+let clientSocket : WebSocket
 
 app.use(cors());
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(fileUpload({ useTempFiles: true }));
 
-
 app.route('/api')
   .get((_req, res) => {
-    res.status(200).json({ message: 'Hello from the server!' });
+    res.status(200).send('Hello from the server!');
   })
-  .post(async (_req, res) : Promise<void> => {
+  .post((_req, res) => {
     const { body, files } = _req;
-    if (body.interval) {
-      printData.interval = body.interval;
-    }
-    if (files?.file) {
+    if (body.interval && files?.file) {
       const uploadFile : any = files.file;
       if (uploadFile.mimetype === 'text/plain') {
-        const content = await readFile(uploadFile.tempFilePath, 'utf8');
-        if (content) {
-          printData.content = content
-          printData.lines = content.split(/\r?\n/)
-          res.status(200).json(printData);
+        const lines = new nReadlines(uploadFile.tempFilePath);
+        if (lines) {
+          // do not wait for the function
+          sendLinesToClient(lines, body.interval)
+          res.status(200);
+        } else {
+          res.status(400).send('NOTHING TO PRINT');
         }
       } else {
-        res.status(400).json({
-          message: 'NOT A PLAIN TEXT FILE'
-        });
+        res.status(400).send('NOT A PLAIN TEXT FILE');
       }
     }
-    res.status(200);
   });
 
 app.listen(port, () => {
@@ -59,7 +49,15 @@ app.listen(port, () => {
 });
 
 wss.on('connection', (ws: WebSocket) => {
-  console.log('Client connected');
-
-  ws.send('Hello from the Server!');
+  clientSocket = ws
+  ws.on('error', console.error);
+  console.log(`Client socket connected on port ${wssPort}`)
 });
+
+async function sendLinesToClient(lines: any, interval: number = 0) {
+  let line;
+  while (line = lines.next()) {
+    clientSocket.send(line.toString('ascii'));
+    await new Promise(resolve => setTimeout(resolve, interval))
+  }
+}

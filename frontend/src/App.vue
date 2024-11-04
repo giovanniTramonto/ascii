@@ -5,7 +5,7 @@
       <input v-model="form.interval" type="range" step="1" min="0" max="5000" /> {{ form.interval }} ms
     </section>
     <section>
-      <button @click="onSubmit" type="submit" class="button">Print</button>
+      <button @click="onSubmit" type="submit" class="button" :disabled=isTextUploaded>Print</button>
     </section>
     <section v-if="errors.length > 0">
       <p v-for="error in errors">
@@ -14,9 +14,9 @@
     </section>
   </form>
 
-  <div v-if="imageLines.length > 0" class="background">
+  <div v-if="textLines.length > 0" class="background">
     <div class="background-inner">
-      <span v-for="line in imageLines">{{ line }}</span>
+      <span v-for="line in textLines">{{ line }}</span>
     </div>
   </div>
 </template>
@@ -24,8 +24,9 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 
-const socket = new WebSocket(__WSS_PATH__);
-const imageLines = ref([])
+const socket = new WebSocket(__WSS_PATH__, ['ascii']);
+const textLines = ref([])
+const isTextUploaded = ref(false)
 const errors = ref([])
 const form = reactive({
   interval: 0,
@@ -33,7 +34,7 @@ const form = reactive({
 })
 
 socket.addEventListener('message', (message : MessageEvent) => {
-  console.log(message.data)
+  textLines.value.push(message.data)
 });
 
 function onChangeFile(event : Event) : void {
@@ -44,7 +45,7 @@ function onChangeFile(event : Event) : void {
 }
 
 async function onSubmit() : Promise<void> {
-  clearErrors()
+  reset()
 
   if (form.file) {
     const formData = new FormData();
@@ -52,21 +53,16 @@ async function onSubmit() : Promise<void> {
       formData.set(key, form[key]);
     }
     const response = await fetch(__API_PATH__, { method: 'POST', body: formData });
-    if (response.ok) {
-      const data = await response.json()
-      imageLines.value = data.lines
+    if (response.status === 200) {
+      isTextUploaded.value = true
+    } else if (response.status === 400) {
+      const text = await response.text()
+      addError(text)
     } else {
-      handleResponseError(response)
+      addError('SOMETHING WENT WRONG')
     }
   } else {
     addError('NO FILE')
-  }
-}
-
-async function handleResponseError(response : any) : Promise<void> {
-  const data = await response.json();
-  if (typeof data.message === 'string') {
-    addError(data.message)
   }
 }
 
@@ -74,8 +70,9 @@ function addError(message : string) :void {
   errors.value.push(message)
 }
 
-function clearErrors() : void {
+function reset() : void {
   errors.value.length = 0
+  isTextUploaded.value = false
 }
 </script>
 
@@ -91,7 +88,6 @@ function clearErrors() : void {
 }
 .background-inner {
   white-space: pre;
-  text-align: center;
   font-family: monospace;
 }
 .background-inner span {

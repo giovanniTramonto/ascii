@@ -13,9 +13,11 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/express-fileupload": "^1",
+    "@types/n-readlines": "^1",
     "@types/node": "^22.8.5",
     "@types/ws": "^8.5.12",
     "express-fileupload": "^1.5.1",
+    "n-readlines": "1.0.1",
     "nodemon": "^3.1.7",
     "typescript": "^5.6.3",
     "ws": "^8.18.0"
