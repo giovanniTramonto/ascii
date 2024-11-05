@@ -23,13 +23,33 @@ const printer = (() => {
   const lines : string[] = [];
   let interval : number = 0;
   let initTime : number = 0;
+  let maxLength : number = 0;
+
+  // If line is not filled with white-space until end of line,
+  // the width of centered output can vary while printing. 
+  // To avoid this effect, fill up with space char.
+  function fillChars(line : string) : string {
+    const { length } = line
+    if (maxLength > length) {
+      for (let i = length; i < maxLength; i++) {
+        line += ' ';
+      }
+    }
+    return line
+  }
+
   return {
-    set: (ms : number = 0) : void => {
+    set(ms : number = 0) : void {
       initTime = Date.now()
       interval = ms
       lines.length = 0
+      maxLength = 0
     },
-    addLine(line : string) {
+    addLine(line : string) : void {
+      const { length } = line
+      if (length > maxLength) {
+        maxLength = length
+      }
       lines.push(line)
     },
     print: async () : Promise<void> => {
@@ -38,7 +58,7 @@ const printer = (() => {
         index++;
         const progress : number = Math.round(100 / lines.length * index);
         const message : PrintMessage = {
-          line,
+          line: fillChars(line),
           progress,
           status: progress === 100 ? PrintStatus.Complete : PrintStatus.Processing
         }
