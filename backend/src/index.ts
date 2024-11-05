@@ -4,77 +4,12 @@ import express from 'express';
 import fileUpload from 'express-fileupload';
 import nReadlines from 'n-readlines'
 import WebSocket from 'ws';
-
-enum PrintStatus {
-  Processing = 'processing',
-  Complete = 'complete'
-}
-interface PrintMessage {
-  line: string,
-  progress: number,
-  status: PrintStatus
-}
+import socketPrinter from './socketPrinter'
 
 const port = process.env.PORT;
 const wssPort : number = Number(process.env.WSS_PORT);
 const wss = new WebSocket.Server({ port: wssPort });
 const app = express();
-const printer = (() => {
-  const lines : string[] = [];
-  let interval : number = 0;
-  let initTime : number = 0;
-  let maxLength : number = 0;
-
-  // If line is not filled with white-space until end of line,
-  // the width of centered output can vary while printing. 
-  // To avoid this effect, fill up with space char.
-  function fillChars(line : string) : string {
-    const { length } = line
-    if (maxLength > length) {
-      for (let i = length; i < maxLength; i++) {
-        line += ' ';
-      }
-    }
-    return line
-  }
-
-  return {
-    set(ms : number = 0) : void {
-      initTime = Date.now()
-      interval = ms
-      lines.length = 0
-      maxLength = 0
-    },
-    addLine(line : string) : void {
-      const { length } = line
-      if (length > maxLength) {
-        maxLength = length
-      }
-      lines.push(line)
-    },
-    print: async () : Promise<void> => {
-      let index = 0
-      for (const line of lines) {
-        index++;
-        const progress : number = Math.round(100 / lines.length * index);
-        const message : PrintMessage = {
-          line: fillChars(line),
-          progress,
-          status: progress === 100 ? PrintStatus.Complete : PrintStatus.Processing
-        }
-        clientSocket.send(JSON.stringify(message));
-        const time : number = await new Promise(resolve => {
-          const t : number = initTime
-          setTimeout(() => resolve(t), interval)
-        });
-        if(time !== initTime) {
-          break
-        }
-      }
-    }
-  };
-})();
-let clientSocket : WebSocket
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -86,18 +21,17 @@ app.route('/api')
   })
   .post((_req, res) => {
     const { body, files } = _req;
-    if (body.interval && files?.file) {
-      const interval : number = body.interval
+    if (files?.file) {
       const uploadFile : any = files.file;
       if (uploadFile.mimetype === 'text/plain') {
         const nLines = new nReadlines(uploadFile.tempFilePath);
         if (nLines) {
-          printer.set(interval);
+          socketPrinter.set(wss, body.socketProtocol, body.interval);
           let line;
           while (line = nLines.next()) {
-            printer.addLine(line.toString('ascii'));
+            socketPrinter.addLine(line.toString('ascii'));
           }
-          printer.print() // do not await async
+          socketPrinter.print() // do not await async
           res.status(200).send('UPLOAD COMPLETE');
         } else {
           res.status(400).send('NOTHING TO PRINT');
@@ -115,7 +49,6 @@ app.listen(port, () => {
 });
 
 wss.on('connection', (ws: WebSocket) => {
-  clientSocket = ws
   ws.on('error', console.error);
-  console.log(`Client socket connected on port ${wssPort}`)
+  console.log(`Client socket ${ws.protocol} connected on port ${wssPort}`)
 });

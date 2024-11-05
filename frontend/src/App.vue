@@ -43,7 +43,8 @@ interface PrintMessage {
   status: PrintStatus
 }
 
-const socket = new WebSocket(__WSS_PATH__, ['ascii']);
+const socketProtocol : string = Date.now().toString()
+const socket = new WebSocket(__WSS_PATH__, [socketProtocol]);
 const textLines = ref([]);
 const errors = ref([]);
 const form = reactive({
@@ -79,6 +80,7 @@ async function onSubmit() : Promise<void> {
     for (const key in form) {
       formData.set(key, form[key]);
     }
+    formData.set('socketProtocol', socketProtocol);
     const response = await fetch(__API_PATH__, { method: 'POST', body: formData });
     if (!response.ok) {
       const text = await response.text?.();
