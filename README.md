@@ -17,3 +17,6 @@ yarn dev
 ```sh
 code ascii.code-workspace
 ```
+
+# Example
+From https://www.asciiart.eu/food-and-drinks/bananas
