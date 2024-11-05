@@ -47,7 +47,7 @@ const socket = new WebSocket(__WSS_PATH__, ['ascii']);
 const textLines = ref([]);
 const errors = ref([]);
 const form = reactive({
-  interval: 0,
+  interval: 100,
   file: null
 });
 const printingProgress = ref(null);
