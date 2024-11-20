@@ -43,15 +43,20 @@ interface PrintMessage {
   status: PrintStatus
 }
 
+interface PrintForm {
+  interval: number,
+  file: File | null
+}
+
 const socketProtocol : string = Date.now().toString()
 const socket = new WebSocket(__WSS_PATH__, [socketProtocol]);
-const textLines = ref([]);
-const errors = ref([]);
-const form = reactive({
+const textLines = ref<string[]>([]);
+const errors = ref<string[]>([]);
+const form = reactive<PrintForm>({
   interval: 100,
   file: null
 });
-const printingProgress = ref(null);
+const printingProgress = ref<number | null>(null);
 const isSubmitting = ref(false);
 const isPrinting = computed(() => printingProgress.value && form.interval > 0);
 
@@ -65,8 +70,8 @@ socket.addEventListener('message', (message : MessageEvent) => {
 });
 
 function onChangeFile(event : Event) : void {
-  const { files } = event.target;
-  if (files && files[0]) {
+  const { files } = event.target as HTMLInputElement;
+  if (files?.[0]) {
     form.file = files[0];
   }
 }
@@ -77,8 +82,8 @@ async function onSubmit() : Promise<void> {
   if (form.file) {
     isSubmitting.value = true;
     const formData = new FormData();
-    for (const key in form) {
-      formData.set(key, form[key]);
+    for (const [key, value] of Object.entries(form)) {
+      formData.set(key, value as string | Blob);
     }
     formData.set('socketProtocol', socketProtocol);
     const response = await fetch(__API_PATH__, { method: 'POST', body: formData });
