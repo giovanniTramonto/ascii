@@ -1,17 +1,16 @@
 <template>
 <div class="wrapper">
-  <form @submit.prevent class="form" enctype="multipart/form-data">
-    <section class="section section--1">
-      <label for="file" class="label">Select a plain text file</label>
-      <input @change="onChangeFile" type="file" name="file" />
-    </section>
-    <section class="section section--2">
-      <label for="interval" class="label">Choose interval</label>
-      <input v-model="form.interval" type="range" name="interval" step="1" min="0" max="5000" /><span>{{ form.interval }} ms</span>
-    </section>
-    <section class="section section--3">
-      <button @click="onSubmit" type="submit" class="button" :disabled=isSubmitting>Print</button>
-    </section>
+  <form @submit.prevent="onSubmit" class="form" enctype="multipart/form-data">
+    <label class="label label--1">
+      <span class="description">Select a plain text file</span>
+      <input @change="onChangeFile" type="file" />
+    </label>
+    <label class="label label--2">
+      <span class="description">Choose interval</span>
+      <input v-model="form.interval" type="range" step="1" min="0" max="5000" />
+      <span>{{ form.interval }} ms</span>
+    </label>
+    <input value="Print" type="submit" class="submit" :disabled=isSubmitting>
   </form>
 
   <div class="notifications">
@@ -108,20 +107,33 @@ function reset() : void {
 </script>
 
 <style scoped>
-.button {
+.submit {
   border: 1px solid var(--clr-yellow);
   padding: 0.5rem;
   color: var(--clr-yellow);
   background: none;
   cursor: pointer;
+  margin: 0 1rem;
 }
-.button:not[disabled]:hover,
-.button:not[disabled]:active {
+.submit:not[disabled]:hover,
+.submit:not[disabled]:active {
   background: var(--clr-yellow);
   color: var(--clr-black);
 }
-.button[disabled] {
+.submit[disabled] {
   opacity: 0.5;
+}
+
+@media screen and (min-width: 960px) {
+  .submit {
+    margin-left: auto;
+  }
+}
+
+.description {
+  display: inline-block;
+  color: var(--clr-yellow);
+  padding: 0.5rem 1rem;
 }
 
 .errors {
@@ -133,6 +145,7 @@ function reset() : void {
 .form {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 1rem;
   padding: 1rem 0;
 }
@@ -144,9 +157,16 @@ function reset() : void {
 }
 
 .label {
-  display: inline-block;
-  color: var(--clr-yellow);
-  padding: 0.5rem 1rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  user-select: none;
+}
+.label--1 {
+  justify-self: start;
+}
+.label--2 {
+  justify-self: center;
 }
 
 .notifications {
@@ -168,29 +188,6 @@ function reset() : void {
 
 .progress {
   padding: 0 1rem;
-}
-
-.section {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  user-select: none;
-}
-.section--1 {
-  justify-self: start;
-}
-.section--2 {
-  justify-self: center;
-}
-.section--3 {
-  flex: 1;
-  padding: 0 1rem;
-}
-
-@media screen and (min-width: 960px) {
-  .section--3 {
-    justify-content: flex-end;
-  }
 }
 
 .wrapper {
